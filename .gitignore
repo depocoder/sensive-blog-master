@@ -1,0 +1,5 @@
+*env
+*media
+*.sqlite3
+
+notes.md
