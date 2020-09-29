@@ -34,9 +34,8 @@ def get_likes_count(post):
 def index(request):
     most_popular_posts = []
     most_popular_posts = Post.objects.annotate(
-        count_likes=Count('likes')).order_by("-count_likes")
-    most_popular_posts = most_popular_posts[:5]
-    most_fresh_posts = Post.objects.order_by('-published_at')[:5]
+        count_likes=Count('likes')).order_by("-count_likes").prefetch_related("author")[:5]
+    most_fresh_posts = Post.objects.order_by('-published_at').prefetch_related("author")[:5]
 
     most_popular_tags = Tag.objects.annotate(
         count_tags=Count('posts')).order_by("-count_tags")[:5]
@@ -61,7 +60,7 @@ def post_detail(request, slug):
         })
 
     likes = post.likes.all()
-
+    author_username = post.prefetch_related
     related_tags = post.tags.all()
 
     serialized_post = {
