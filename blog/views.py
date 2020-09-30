@@ -79,7 +79,6 @@ def post_detail(request, slug):
         })
 
     likes = post.likes.all()
-    author_username = post.prefetch_related
     related_tags = post.tags.all()
 
     serialized_post = {
