@@ -1,14 +1,33 @@
 from django.db import models
 from django.urls import reverse
 from django.contrib.auth.models import User
+from django.db.models import Count
+
+class PostQuerySet(models.QuerySet):
+
+    def fetch_with_comments_count(self):
+        most_popular_posts = list(self)
+        most_popular_posts_ids = [post.id for post in most_popular_posts]
+        posts_with_comments = Post.objects.filter(id__in=most_popular_posts_ids).annotate(comments_count=Count('comments'))
+        ids_and_comments = posts_with_comments.values_list('id', 'comments_count')
+        count_for_id = dict(ids_and_comments)
+        for post in most_popular_posts:
+            post.comments_count = count_for_id[post.id]
+        return most_popular_posts
+
+    def popular(self):
+        return self.annotate(likes_count=Count('likes')).order_by('-likes_count')
+
 
 
 class Post(models.Model):
+
     title = models.CharField("Заголовок", max_length=200)
     text = models.TextField("Текст")
     slug = models.SlugField("Название в виде url", max_length=200)
     image = models.ImageField("Картинка")
     published_at = models.DateTimeField("Дата и время публикации")
+    objects = PostQuerySet.as_manager()
 
     author = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Автор", limit_choices_to={'is_staff': True})
     likes = models.ManyToManyField(User, related_name="liked_posts", verbose_name="Кто лайкнул", blank=True)
@@ -24,9 +43,17 @@ class Post(models.Model):
         ordering = ['-published_at']
         verbose_name = 'пост'
         verbose_name_plural = 'посты'
+    
 
+class TagQuerySet(models.QuerySet):
+    def popular(self):
+        popular_tag = self.annotate(
+            count_tags=Count('posts')).order_by("-count_tags")
+        return popular_tag
+ 
 
 class Tag(models.Model):
+    objects = TagQuerySet.as_manager()
     title = models.CharField("Тег", max_length=20, unique=True)
 
     def __str__(self):
