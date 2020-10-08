@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from blog.models import Comment, Post, Tag
 from django.db.models import Count, Prefetch
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned 
 
 
 def serialize_post(post):
@@ -49,7 +50,10 @@ def index(request):
 
 
 def post_detail(request, slug):
-    post = Post.objects.select_related('author').get(slug=slug)
+    try:
+        post = Post.objects.select_related('author').get(slug=slug)
+    except (MultipleObjectsReturned, ObjectDoesNotExist):
+        return HttpResponseNotFound('<h1>Такой покемон не найден</h1>')
     comments = post.comments.prefetch_related('author')
     serialized_comments = []
     for comment in comments:
@@ -92,7 +96,10 @@ def post_detail(request, slug):
 
 
 def tag_filter(request, tag_title):
-    tag = Tag.objects.get(title=tag_title)
+    try:
+        tag = Tag.objects.get(title=tag_title)
+    except (MultipleObjectsReturned, ObjectDoesNotExist):
+        return HttpResponseNotFound('<h1>Такой покемон не найден</h1>')
 
     most_popular_tags = Tag.objects.popular()[:5]
 
